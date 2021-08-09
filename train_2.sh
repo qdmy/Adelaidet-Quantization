@@ -1,0 +1,1 @@
+CUDA_VISIBLE_DEVICES=0,1,2,3 python tools/train_net.py --num-gpus 4 --config-file configs/FCOS-COCO-Detection/fcos_R_18_1x-Full_SyncBN_dorefa_clip_backbone_fpn.yaml --dist-url tcp://127.0.0.1:10021

@@ -1,0 +1,16 @@
+_BASE_: "../Base-RetinaNet.yaml"
+MODEL:
+  WEIGHTS: "/home/liujing/Codes/detections/Adelaidet-Quantization/output/coco-detection/retinanet_R_50_FPN_1x-FPN_SyncBN-Head_GN/model_final.pth"
+  # WEIGHTS: "weights/det-resnet50/official-r50.pth.raw"
+  RESNETS:
+    DEPTH: 50
+    STRIDE_IN_1X1: False
+    NORM: "BN"
+  BACKBONE:
+    FREEZE_AT: 0
+  FPN:
+    NORM: "BN"
+    USE_RELU: True
+  RETINANET:
+    NORM: "GN"
+OUTPUT_DIR: output/coco-detection/retinanet_R_50_FPN_1x-FPN_BN-Head_GN_test

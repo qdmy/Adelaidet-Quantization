@@ -1,0 +1,19 @@
+_BASE_: "../Base-RetinaNet-q.yaml"
+MODEL:
+  EXTRA_WEIGHTS: "/home/liujing/Models/retinanet/retinanet_R_34_FPN_1x/model_final.pth"
+  # WEIGHTS: "/home/liujing/Models/resnet34_2bit_dorefa_clip_71.54_detectron.pth"
+  RESNETS:
+    DEPTH: 34
+    RES2_OUT_CHANNELS: 64
+    NORM: "FrozenStatisticsBN"
+  BACKBONE:
+    FREEZE_AT: 0
+  QUANTIZATION:
+    fm_bit: 2.0
+    wt_bit: 2.0
+    QUAN_TYPE: "linear"
+    QUANTIZE_FIRST_AND_LAST: True
+    MERGE_BN: False
+TEST:
+  EVAL_PERIOD: 2500
+OUTPUT_DIR: output/coco-detection/retinanet_R_34_FPN_1x_linear_2bit_all_layer_first4last4

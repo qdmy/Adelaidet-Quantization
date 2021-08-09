@@ -1,0 +1,17 @@
+_BASE_: "../Base-BlendMask-Aux.yaml"
+MODEL:
+  BASIS_MODULE:
+    NUM_CLASSES: 246
+    ANN_SET: "lvis"
+  FCOS:
+    NUM_CLASSES: 1230
+DATASETS:
+  TRAIN: ("lvis_v0.5_train",)
+  TEST: ("lvis_v0.5_val",)
+SOLVER:
+  IMS_PER_BATCH: 12
+TEST:
+  DETECTIONS_PER_IMAGE: 300  # LVIS allows up to 300
+DATALOADER:
+  SAMPLER_TRAIN: "RepeatFactorTrainingSampler"
+  REPEAT_THRESHOLD: 0.001

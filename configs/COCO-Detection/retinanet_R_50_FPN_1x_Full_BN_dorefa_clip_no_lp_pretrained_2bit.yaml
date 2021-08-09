@@ -1,0 +1,22 @@
+_BASE_: "../Base-RetinaNet-q.yaml"
+MODEL:
+  EXTRA_WEIGHTS: "/fast/users/a1675776/liujing/models/retinanet_R_50_FPN_1x-Full_BN/model_final.pth"
+  # WEIGHTS: "/home/liujing/Models/resnet50_2bit_dorefa_clip_73.798_detectron.pth"
+  RESNETS:
+    DEPTH: 50
+    STRIDE_IN_1X1: False
+    NORM: "SyncBN"
+  BACKBONE:
+    FREEZE_AT: 0
+  FPN:
+    NORM: "SyncBN"
+    USE_RELU: True
+  RETINANET:
+    NORM: "SyncBN"
+    SHARED_NORM: False
+  QUANTIZATION:
+    fm_bit: 2.0
+    wt_bit: 2.0
+TEST:
+  EVAL_PERIOD: 2500
+OUTPUT_DIR: output/coco-detection/retinanet_R_50_1x_Full_SyncBN_dorefa_clip_2bit_no_lp_pretrained

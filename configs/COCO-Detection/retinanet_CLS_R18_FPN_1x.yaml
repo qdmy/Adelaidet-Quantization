@@ -1,0 +1,16 @@
+_BASE_: "../Base-RetinaNet.yaml"
+MODEL:
+  WEIGHTS: "weights/resnet18/cls_r18.pth.raw"
+  RESNETS:
+    OUT_FEATURES: ['layer2', 'layer3', 'layer4']
+    DEPTH: 18
+    RES2_OUT_CHANNELS: 64
+    NORM: "BN"
+  BACKBONE:
+    NAME: "build_retinanet_cls_resnet_fpn_backbone"
+    FREEZE_AT: 0
+  FPN:
+    IN_FEATURES: ['layer2', 'layer3', 'layer4']
+  CLS:
+    VERBOSE: True
+OUTPUT_DIR: output/coco-detection/retinanet_CLS_R18_FPN_1x

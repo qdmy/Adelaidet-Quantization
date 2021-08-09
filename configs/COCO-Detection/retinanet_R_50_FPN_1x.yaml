@@ -1,0 +1,13 @@
+_BASE_: "../Base-RetinaNet.yaml"
+MODEL:
+  #WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
+  WEIGHTS: "/home/liujing/Models/resnet50_detectron.pth"
+  RESNETS:
+    DEPTH: 50
+    STRIDE_IN_1X1: False
+    NORM: "SyncBN"
+  BACKBONE:
+    FREEZE_AT: 0
+TEST:
+  EVAL_PERIOD: 2500
+OUTPUT_DIR: output/coco-detection/retinanet_R_50_FPN_1x

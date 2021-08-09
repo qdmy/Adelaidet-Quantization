@@ -1,0 +1,15 @@
+_BASE_: "Base-550.yaml"
+MODEL:
+  WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
+  RESNETS:
+    DEPTH: 50
+  FCOS:
+    NUM_CLS_CONVS: 0
+    NUM_BOX_CONVS: 0
+    NUM_SHARE_CONVS: 4
+    INFERENCE_TH_TRAIN: 0.03
+    PRE_NMS_TOPK_TRAIN: 12000
+    PRE_NMS_TOPK_TEST: 6000
+    POST_NMS_TOPK_TRAIN: 2000
+    POST_NMS_TOPK_TEST: 1000
+OUTPUT_DIR: "output/lighthead/550_s_03_more_1x"

@@ -1,0 +1,4 @@
+_BASE_: "Base-BlendMask.yaml"
+MODEL:
+  BASIS_MODULE:
+    LOSS_ON: True

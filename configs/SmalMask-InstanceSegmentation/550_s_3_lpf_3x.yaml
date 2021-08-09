@@ -1,0 +1,15 @@
+_BASE_: "Base-550.yaml"
+MODEL:
+  WEIGHT: "weights/resnet50_lpf3.pth"
+  BACKBONE:
+    NAME: "build_fcos_resnet_lpf_fpn_backbone"
+  RESNETS:
+    DEPTH: 50
+  FCOS:
+    NUM_CLS_CONVS: 0
+    NUM_BOX_CONVS: 0
+    NUM_SHARE_CONVS: 3
+SOLVER:
+  STEPS: (180000, 240000)
+  MAX_ITER: 270000
+OUTPUT_DIR: "output/nobox/550_s_3_lpf_3x"

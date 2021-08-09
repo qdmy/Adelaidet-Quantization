@@ -1,0 +1,14 @@
+_BASE_: "../Base-RCNN-FPN.yaml"
+MODEL:
+  WEIGHTS: "weights/det-resnet18/official-r18.pth.raw"
+  MASK_ON: True
+  RESNETS:
+    DEPTH: 18
+    RES2_OUT_CHANNELS: 64
+    NORM: "BN"
+    STRIDE_IN_1X1: False
+  BACKBONE:
+    FREEZE_AT: 0
+  fp16: True
+OUTPUT_DIR: output/coco-instance-segmentation/mask-rcnn_R_18_FPN_1x-fp16
+

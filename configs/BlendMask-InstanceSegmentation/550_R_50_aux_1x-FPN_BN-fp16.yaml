@@ -1,0 +1,15 @@
+_BASE_: "Base-550-Aux.yaml"
+MODEL:
+  #WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
+  WEIGHTS: "weights/det-resnet50/official-r50.pth.raw"
+  RESNETS:
+    DEPTH: 50
+    STRIDE_IN_1X1: False
+    NORM: "BN"
+  BACKBONE:
+    FREEZE_AT: 0
+  FPN:
+    NORM: "BN"
+    USE_RELU: True
+  fp16: True
+OUTPUT_DIR: "output/coco-instance-segmentation/blendmask_550_R_50_aux_1x-fpn-bn-fp16"

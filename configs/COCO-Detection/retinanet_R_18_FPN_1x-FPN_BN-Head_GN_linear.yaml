@@ -1,0 +1,27 @@
+_BASE_: "../Base-RetinaNet-q.yaml"
+MODEL:
+  EXTRA_WEIGHTS: "/home/liujing/Models/retinanet/retinanet_R_18_FPN_1x-FPN_BN-Head_GN/model_final.pth"
+  # WEIGHTS: "/home/liujing/Models/retinanet/retinanet_R_18_FPN_1x-FPN_BN-Head_GN/model_final.pth"
+  RESNETS:
+    DEPTH: 18
+    RES2_OUT_CHANNELS: 64
+    NORM: "FrozenStatisticsBN"
+  BACKBONE:
+    FREEZE_AT: 0
+  FPN:
+    NORM: "FrozenStatisticsBN"
+    USE_RELU: True
+  RETINANET:
+    NORM: "GN"
+  QUANTIZATION:
+    fm_bit: 2.0
+    wt_bit: 2.0
+    shortcut_fm_bit: 2.0
+    shortcut_wt_bit: 2.0
+    first_last_fm_bit: 8.0
+    first_last_wt_bit: 8.0
+    QUAN_TYPE: "linear"
+    QUANTIZE_FIRST_AND_LAST: True
+TEST:
+  EVAL_PERIOD: 2500
+OUTPUT_DIR: output/coco-detection/retinanet_R_18_FPN_1x_FPN_FrozenStatisticsBN_Head_GN_linear_2bit_all_layer_first8last8shortcut2only_pytorch_init

@@ -1,0 +1,1 @@
+CUDA_VISIBLE_DEVICES=4 python tools/compute_flops.py --num-gpus 1 --config-file configs/FCOS-COCO-Detection/fcos_R_18_1x-Full_SyncBN_dorefa_clip_test.yaml --dist-url tcp://127.0.0.1:10020 SOLVER.IMS_PER_BATCH 1

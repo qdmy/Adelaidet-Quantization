@@ -1,0 +1,14 @@
+_BASE_: "../Base-RetinaNet.yaml"
+MODEL:
+  WEIGHTS: "weights/det-resnet34/official-r34.pth.raw"
+  RESNETS:
+    DEPTH: 34
+    RES2_OUT_CHANNELS: 64
+    NORM: "BN"
+  BACKBONE:
+    FREEZE_AT: 0
+#SOLVER:
+#  BASE_LR: 0.01
+#  STEPS: (30000, 80000)
+#  IMS_PER_BATCH: 32
+OUTPUT_DIR: output/coco-detection/retinanet_R_34_FPN_1x_round4

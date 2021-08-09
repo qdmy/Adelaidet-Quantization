@@ -1,0 +1,19 @@
+_BASE_: "../Base-RetinaNet-q.yaml"
+MODEL:
+  EXTRA_WEIGHTS: "/home/liujing/Models/retinanet/retinanet_R_18_FPN_1x/model_final.pth"
+  # WEIGHTS: "weights/det-resnet18/official-r18.pth.raw"
+  RESNETS:
+    DEPTH: 18
+    RES2_OUT_CHANNELS: 64
+    NORM: "FrozenStatisticsBN"
+  BACKBONE:
+    FREEZE_AT: 0
+  QUANTIZATION:
+    fm_bit: 2.0
+    wt_bit: 2.0
+    QUAN_TYPE: "linear"
+    QUANTIZE_FIRST_AND_LAST: True
+    MERGE_BN: False
+TEST:
+  EVAL_PERIOD: 2500
+OUTPUT_DIR: output/coco-detection/retinanet_R_18_FPN_1x_linear_2bit_all_layer_first2last2_

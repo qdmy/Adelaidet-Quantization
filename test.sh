@@ -1,0 +1,1 @@
+CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 python tools/train_net.py --num-gpus 8 --config-file configs/COCO-Detection/retinanet_R_50_FPN_1x_linear.yaml --dist-url tcp://127.0.0.1:10062 --eval-only

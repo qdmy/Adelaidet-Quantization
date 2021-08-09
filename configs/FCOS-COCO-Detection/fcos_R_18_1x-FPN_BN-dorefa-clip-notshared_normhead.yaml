@@ -1,0 +1,33 @@
+_BASE_: "Base-FCOS-q.yaml"
+MODEL:
+  #WEIGHTS: "weights/det-resnet18/official-r18.pth.raw"
+  EXTRA_WEIGHTS: "/home/liujing/Models/chenpeng/model_final_multilevel.pth"
+  WEIGHTS: "/home/liujing/Models/resnet18_2bit_dorefa_clip_67.432_detectron2.pth"
+  RESNETS:
+    DEPTH: 18
+    RES2_OUT_CHANNELS: 64
+    NORM: "BN"
+    STRIDE_IN_1X1: False
+  BACKBONE:
+    FREEZE_AT: 0
+  FPN:
+    NORM: "BN"
+    USE_RELU: True
+  PROPOSAL_GENERATOR:
+    NAME: "QFCOS"
+  FCOS:
+    NORM: "GN"
+  fp16: False
+  QUANTIZATION:
+    fm_bit: 2.0
+    wt_bit: 2.0
+    NOT_SHARED_NORM_HEAD: True
+INPUT:
+  MIN_SIZE_TRAIN: (800,)
+SOLVER:
+  WARMUP_METHOD: "constant"
+  WARMUP_FACTOR: 0.3333
+  WARMUP_ITERS: 500
+TEST:
+  EVAL_PERIOD: 2500
+OUTPUT_DIR: "output/fcos/R_18_1x-FPN_BN-dorefa-clip-notshared-normhead"

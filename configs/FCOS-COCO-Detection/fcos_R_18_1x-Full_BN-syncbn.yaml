@@ -1,0 +1,23 @@
+_BASE_: "Base-FCOS.yaml"
+MODEL:
+  WEIGHTS: "weights/det-resnet18/official-r18.pth.raw"
+  RESNETS:
+    DEPTH: 18
+    RES2_OUT_CHANNELS: 64
+    NORM: "SyncBN"
+    STRIDE_IN_1X1: False
+  BACKBONE:
+    FREEZE_AT: 0
+  FPN:
+    NORM: "SyncBN"
+    USE_RELU: True
+  FCOS:
+    NORM: "SyncBN"
+INPUT:
+  MIN_SIZE_TRAIN: (800,)
+SOLVER:
+  WARMUP_METHOD: "constant"
+  WARMUP_FACTOR: 0.3333
+  WARMUP_ITERS: 500
+OUTPUT_DIR: "output/fcos/R_18_1x-Full_BN-SyncBN"
+

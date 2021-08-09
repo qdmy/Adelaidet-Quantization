@@ -1,0 +1,4 @@
+_BASE_: "Base-SmalBlend.yaml"
+MODEL:
+  BASIS_MODULE:
+    LOSS_ON: True

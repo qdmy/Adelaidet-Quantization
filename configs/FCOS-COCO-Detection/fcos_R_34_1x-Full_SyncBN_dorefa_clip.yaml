@@ -1,0 +1,37 @@
+_BASE_: "Base-FCOS-q.yaml"
+MODEL:
+  #WEIGHTS: "weights/det-resnet18/official-r18.pth.raw"
+  EXTRA_WEIGHTS: "/home/liujing/Models/R_34_1x-Full_BN/model_final.pth"
+  WEIGHTS: "/home/liujing/Models/resnet34_4bit_dorefa_clip_std_detectron_74.434.pth"
+  RESNETS:
+    DEPTH: 34
+    RES2_OUT_CHANNELS: 64
+    NORM: "SyncBN"
+    STRIDE_IN_1X1: False
+  BACKBONE:
+    FREEZE_AT: 0
+  FPN:
+    NORM: "SyncBN"
+    USE_RELU: True
+  PROPOSAL_GENERATOR:
+    NAME: "QFCOS"
+  FCOS:
+    NORM: "SyncBN"
+    SHARED_NORM: False
+  QUANTIZATION:
+    fm_bit: 2.0
+    wt_bit: 2.0
+    NOT_SHARED_NORM_HEAD: False
+    USE_SIGMOID_QUANTIZATION: False
+    USE_UNIROM_QUANTIZATION: True
+    T: 3.0
+INPUT:
+  MIN_SIZE_TRAIN: (800,)
+SOLVER:
+  WARMUP_METHOD: "constant"
+  WARMUP_FACTOR: 0.3333
+  WARMUP_ITERS: 500
+  CHECKPOINT_PERIOD: 2500
+TEST:
+  EVAL_PERIOD: 2500
+OUTPUT_DIR: "output/fcos/R_34_1x-Full_SyncBN_dorefa_clip_2bit"

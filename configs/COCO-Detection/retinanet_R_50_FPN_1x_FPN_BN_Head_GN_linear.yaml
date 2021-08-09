@@ -1,0 +1,27 @@
+_BASE_: "../Base-RetinaNet-q.yaml"
+MODEL:
+  EXTRA_WEIGHTS: "/home/liujing/Codes/detections/Adelaidet-Quantization/output/coco-detection/retinanet_R_50_FPN_1x-FPN_SyncBN-Head_GN/model_final.pth"
+  # WEIGHTS: "/home/liujing/Codes/detections/Adelaidet-Quantization/output/coco-detection/retinanet_R_50_FPN_1x-FPN_SyncBN-Head_GN/model_final.pth"
+  RESNETS:
+    DEPTH: 50
+    STRIDE_IN_1X1: False
+    NORM: "FrozenStatisticsBN"
+  BACKBONE:
+    FREEZE_AT: 0
+  FPN:
+    NORM: "FrozenStatisticsBN"
+    USE_RELU: True
+  RETINANET:
+    NORM: "GN"
+  QUANTIZATION:
+    fm_bit: 2.0
+    wt_bit: 2.0
+    shortcut_fm_bit: 2.0
+    shortcut_wt_bit: 2.0
+    first_last_fm_bit: 8.0
+    first_last_wt_bit: 8.0
+    QUAN_TYPE: "linear"
+    QUANTIZE_FIRST_AND_LAST: True
+TEST:
+  EVAL_PERIOD: 2500
+OUTPUT_DIR: output/coco-detection/retinanet_R_50_FPN_1x_FPN_FrozenBN_Head_GN_linear_2bit_all_layer_first8last8shortcut2only_pytorch_init

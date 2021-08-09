@@ -1,0 +1,12 @@
+_BASE_: "Base-550.yaml"
+MODEL:
+  WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
+  RESNETS:
+    DEPTH: 50
+  FCOS:
+    NUM_CLS_CONVS: 0
+    NUM_BOX_CONVS: 0
+    NUM_SHARE_CONVS: 4
+  LIGHT_HEAD:
+    POOLER_SAMPLING_RATIO: 2
+OUTPUT_DIR: "output/nobox/550_s_s2_1x"

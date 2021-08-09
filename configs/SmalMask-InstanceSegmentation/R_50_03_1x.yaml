@@ -1,0 +1,8 @@
+_BASE_: "Base-LightHead.yaml"
+MODEL:
+  WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
+  RESNETS:
+    DEPTH: 50
+  FCOS:
+    INFERENCE_TH_TRAIN: 0.03
+OUTPUT_DIR: "output/lighthead/R_50_03_1x"

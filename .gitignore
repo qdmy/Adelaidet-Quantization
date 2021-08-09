@@ -1,0 +1,48 @@
+# output dir
+output
+instant_test_output
+inference_test_output
+
+
+*.jpg
+*.png
+*.txt
+
+# compilation and distribution
+__pycache__
+_ext
+*.pyc
+*.so
+detectron2.egg-info/
+build/
+dist/
+debug/
+
+
+# pytorch/python/numpy formats
+*.pth
+*.pkl
+*.npy
+
+# ipython/jupyter notebooks
+*.ipynb
+**/.ipynb_checkpoints/
+
+# Editor temporaries
+*.swn
+*.swo
+*.swp
+*~
+
+# Editor settings
+.idea
+.vscode
+
+# project dirs
+datasets
+models
+weights
+
+configs/COCO-Detection-peng
+configs/FCOS-COCO-Detection-peng
+peng_train_script/

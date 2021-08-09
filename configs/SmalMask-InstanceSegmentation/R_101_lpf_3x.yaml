@@ -1,0 +1,11 @@
+_BASE_: "Base-LightHead.yaml"
+MODEL:
+  WEIGHT: "weights/resnet101_lpf3.pth"
+  BACKBONE:
+    NAME: "build_fcos_resnet_lpf_fpn_backbone"
+  RESNETS:
+    DEPTH: 101
+SOLVER:
+  STEPS: (180000, 240000)
+  MAX_ITER: 270000
+OUTPUT_DIR: "output/nobox/R_101_lpf_3x"

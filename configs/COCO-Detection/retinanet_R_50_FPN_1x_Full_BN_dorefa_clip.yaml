@@ -1,0 +1,22 @@
+_BASE_: "../Base-RetinaNet-q.yaml"
+MODEL:
+  EXTRA_WEIGHTS: "/home/liujing/Codes/detections/Adelaidet-Quantization/output/coco-detection/retinanet_R_50_1x_Full_SyncBN/model_final.pth"
+  WEIGHTS: "/home/liujing/Models/resnet50_2bit_dorefa_clip_73.798_detectron.pth"
+  RESNETS:
+    DEPTH: 50
+    STRIDE_IN_1X1: False
+    NORM: "BN"
+  BACKBONE:
+    FREEZE_AT: 0
+  FPN:
+    NORM: "BN"
+    USE_RELU: True
+  RETINANET:
+    NORM: "BN"
+    SHARED_NORM: False
+  QUANTIZATION:
+    fm_bit: 4.0
+    wt_bit: 4.0
+TEST:
+  EVAL_PERIOD: 2500
+OUTPUT_DIR: output/coco-detection/retinanet_R_50_1x_Full_BN

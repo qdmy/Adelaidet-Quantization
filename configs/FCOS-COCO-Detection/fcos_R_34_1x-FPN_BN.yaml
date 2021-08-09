@@ -1,0 +1,24 @@
+_BASE_: "Base-FCOS.yaml"
+MODEL:
+  WEIGHTS: "/home/liujing/models/resnet34_detectron.pth"
+  RESNETS:
+    DEPTH: 34
+    RES2_OUT_CHANNELS: 64
+    NORM: "BN"
+    STRIDE_IN_1X1: False
+  BACKBONE:
+    FREEZE_AT: 0
+  FPN:
+    NORM: "BN"
+    USE_RELU: True
+  FCOS:
+    NORM: "GN"
+INPUT:
+  MIN_SIZE_TRAIN: (800,)
+SOLVER:
+  WARMUP_METHOD: "constant"
+  WARMUP_FACTOR: 0.3333
+  WARMUP_ITERS: 500
+TEST:
+  EVAL_PERIOD: 2500
+OUTPUT_DIR: "output/fcos/R_34_1x-FPN_BN-FCOS-GN"

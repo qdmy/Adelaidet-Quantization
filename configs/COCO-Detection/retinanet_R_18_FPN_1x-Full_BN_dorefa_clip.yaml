@@ -1,0 +1,16 @@
+_BASE_: "./Base-RetinaNet.yaml"
+MODEL:
+  EXTRA_WEIGHTS: "/home/liujing/Models/retinanet/retinanet_R_18_FPN_1x-FPN_BN-Head_GN/model_final.pth"
+  WEIGHTS: "/home/liujing/Models/resnet18_2bit_dorefa_clip_67.432_detectron2.pth"
+  RESNETS:
+    DEPTH: 18
+    RES2_OUT_CHANNELS: 64
+    NORM: "BN"
+  BACKBONE:
+    FREEZE_AT: 0
+  FPN:
+    NORM: "BN"
+    USE_RELU: True
+  RETINANET:
+    NORM: "BN"
+OUTPUT_DIR: output/coco-detection/retinanet_R_18_1x_Full_BN
