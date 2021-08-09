@@ -209,7 +209,11 @@ class SimpleTrainer(TrainerBase):
         """
         If your want to do something with the data, you can wrap the dataloader.
         """
-        data, super_targets_masks, super_targets_inverse_masks, super_targets_idxs, super_targets = next(self._data_loader_iter)
+        inputs = next(self._data_loader_iter) # 是个list，长度为4（batch size），每个元素是个tuple，长度为5（getitem）
+        # print(len(inputs[0]))
+        inputs = np.array(inputs, dtype=object).T
+
+        data, super_targets_masks, super_targets_inverse_masks, super_targets_idxs, super_targets = inputs
         data_time = time.perf_counter() - start
 
         """

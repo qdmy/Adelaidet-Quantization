@@ -63,8 +63,7 @@ class DatasetMapper:
             )
         self.is_train = is_train
 
-    def __call__(self, dataset_dict, super_targets_mask, super_targets_inverse_mask,
-                super_targets_idx, super_target):
+    def __call__(self, dataset_dict):
         """
         Args:
             dataset_dict (dict): Metadata of one image, in Detectron2 Dataset format.
@@ -113,7 +112,7 @@ class DatasetMapper:
             dataset_dict.pop("annotations", None)
             dataset_dict.pop("sem_seg_file_name", None)
             dataset_dict.pop("pano_seg_file_name", None)
-            return dataset_dict, super_targets_mask, super_targets_inverse_mask, super_targets_idx, super_target
+            return dataset_dict#, super_targets_mask, super_targets_inverse_mask, super_targets_idx, super_target
 
         if "annotations" in dataset_dict:
             # USER: Modify this if you want to keep them for some reason.
@@ -159,4 +158,4 @@ class DatasetMapper:
             basis_sem_gt = transforms.apply_segmentation(basis_sem_gt)
             basis_sem_gt = torch.as_tensor(basis_sem_gt.astype("long"))
             dataset_dict["basis_sem"] = basis_sem_gt
-        return dataset_dict, super_targets_mask, super_targets_inverse_mask, super_targets_idx, super_target
+        return dataset_dict#, super_targets_mask, super_targets_inverse_mask, super_targets_idx, super_target

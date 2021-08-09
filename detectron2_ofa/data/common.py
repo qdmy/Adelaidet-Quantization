@@ -36,11 +36,16 @@ class MapDataset(data.Dataset):
         cur_idx = int(idx)
 
         while True:
-            data, super_targets_mask, super_targets_inverse_mask, super_targets_idx, super_target = self._map_func(
-                *self._dataset[cur_idx])
+            dataset_dict = self._dataset[cur_idx][0]
+            # super_targets_mask = self._dataset[cur_idx][1]
+            # super_targets_inverse_mask = self._dataset[cur_idx][2]
+            # super_targets_idx = self._dataset[cur_idx][3]
+            # super_target = self._dataset[cur_idx][4]
+
+            data = self._map_func(dataset_dict)
             if data is not None:
                 self._fallback_candidates.add(cur_idx)
-                return data, super_targets_mask, super_targets_inverse_mask, super_targets_idx, super_target # 后面四项数据没包装进去，dataloader获取不到
+                return (data, *self._dataset[cur_idx][1:]) # 后面四项数据没包装进去，dataloader获取不到
 
             # _map_func fails for this idx, use a random new index from the pool
             retry_count += 1
