@@ -66,7 +66,7 @@ class DatasetFromList(data.Dataset):
     Wrap a list to a torch Dataset. It produces elements of the list as data.
     """
 
-    def __init__(self, lst: list, classes, class_to_idx, ranges, meta, copy: bool = True):
+    def __init__(self, lst: list, classes, class_to_idx, ranges, meta, copy: bool = True, superclass_num = None):
         """
         Args:
             lst (list): a list which contains elements to produce.
@@ -94,7 +94,7 @@ class DatasetFromList(data.Dataset):
         # self.targets = [obj["category_id"] for s in self._dataset for obj in s["annotations"]]
 
         # self.class_to_superclass = get_class_to_superclass(ranges) # 这样重新对应，会导致idx的对应关系不一致
-        self.class_to_superclass = np.array(range(12))
+        self.class_to_superclass = np.array(range(superclass_num))
         self.super_targets = self.class_to_superclass[self.targets]  # 在load_coco时已经有个id_map把子类映射为超类，所以这里二者是一样的值
 
         self.n_superclass = len(ranges)

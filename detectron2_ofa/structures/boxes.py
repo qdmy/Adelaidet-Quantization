@@ -269,14 +269,14 @@ def pairwise_iou(boxes1: Boxes, boxes2: Boxes) -> torch.Tensor:
 
     boxes1, boxes2 = boxes1.tensor, boxes2.tensor
 
-    lt = torch.max(boxes1[:, None, :2], boxes2[:, :2])  # [N,M,2]
-    rb = torch.min(boxes1[:, None, 2:], boxes2[:, 2:])  # [N,M,2]
+    lt = torch.max(boxes1[:, None, :2], boxes2[:, :2])  # [N,M,2]，每一个候选box与gt相交后的左上角坐标
+    rb = torch.min(boxes1[:, None, 2:], boxes2[:, 2:])  # [N,M,2]，右下角坐标
 
-    wh = (rb - lt).clamp(min=0)  # [N,M,2]
-    inter = wh[:, :, 0] * wh[:, :, 1]  # [N,M]
+    wh = (rb - lt).clamp(min=0)  # [N,M,2]，每个相交box的边长
+    inter = wh[:, :, 0] * wh[:, :, 1]  # [N,M]，每个候选box与gt相交的面积
 
     # handle empty boxes
-    iou = torch.where(
+    iou = torch.where( # 大于0的位置，填上iou，小于0的就填0
         inter > 0,
         inter / (area1[:, None] + area2 - inter),
         torch.zeros(1, dtype=inter.dtype, device=inter.device),

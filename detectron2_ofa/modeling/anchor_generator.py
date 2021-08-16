@@ -44,7 +44,7 @@ def _create_grid_offsets(size, stride, device):
     shifts_y = torch.arange(
         0, grid_height * stride, step=stride, dtype=torch.float32, device=device
     )
-    shift_y, shift_x = torch.meshgrid(shifts_y, shifts_x) # 创建按照stride间隔指定的二维网格
+    shift_y, shift_x = torch.meshgrid(shifts_y, shifts_x) # 创建按照stride间隔指定的二维网格，输出的是一个tuple，(y[0][0], x[0][0])就是对应左上角的位置
     shift_x = shift_x.reshape(-1)
     shift_y = shift_y.reshape(-1)
     return shift_x, shift_y
@@ -90,7 +90,7 @@ class DefaultAnchorGenerator(nn.Module):
         assert self.num_features == len(sizes)
         assert self.num_features == len(aspect_ratios)
 
-        cell_anchors = [
+        cell_anchors = [ # 每个元素对应一个feature map level的anchors，每个元素的shape是（sizes*ratios）*4
             self.generate_cell_anchors(s, a).float() for s, a in zip(sizes, aspect_ratios)
         ]
 
@@ -116,13 +116,13 @@ class DefaultAnchorGenerator(nn.Module):
 
                 In standard RPN models, `num_cell_anchors` on every feature map is the same.
         """
-        return [len(cell_anchors) for cell_anchors in self.cell_anchors]
+        return [len(cell_anchors) for cell_anchors in self.cell_anchors] # 每一个anchors的长度是sizes*ratios，都是一样的
 
     def grid_anchors(self, grid_sizes):
         anchors = []
         for size, stride, base_anchors in zip(grid_sizes, self.strides, self.cell_anchors):
             shift_x, shift_y = _create_grid_offsets(size, stride, base_anchors.device)
-            shifts = torch.stack((shift_x, shift_y, shift_x, shift_y), dim=1) # 每一行4个元素，对应每个anchor移到该位置所需的偏移量
+            shifts = torch.stack((shift_x, shift_y, shift_x, shift_y), dim=1) # 每一行4个元素，对应每个anchor的左上和右下坐标移到该位置所需的偏移量
 
             anchors.append((shifts.view(-1, 1, 4) + base_anchors.view(1, -1, 4)).reshape(-1, 4)) # 加上中心点为(0,0)的base anchor，就得到anchor按照stride移动后每种可能位置
 
@@ -186,7 +186,7 @@ class DefaultAnchorGenerator(nn.Module):
             anchors_in_image.append(boxes)
 
         anchors = [copy.deepcopy(anchors_in_image) for _ in range(num_images)] # 每张图片都要有同样多的候选anchor
-        return anchors
+        return anchors # 每张图片 * 每个resolution level * 可能的box个数 * 4
 
 
 @ANCHOR_GENERATOR_REGISTRY.register()

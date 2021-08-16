@@ -215,7 +215,8 @@ class SimpleTrainer(TrainerBase):
 
         data, super_targets_masks, super_targets_inverse_masks, super_targets_idxs, super_targets = inputs
         data_time = time.perf_counter() - start
-
+        # super_targets_masks = torch.tensor(np.concatenate(super_targets_masks)) # 按照刘璟说的，先在number维度上concat去做dropout，之后再分回来，为了能分开，需要知道每个image对应几个mask，所以要在里面做concat，不能在这做
+        # super_targets_inverse_masks = torch.tensor(np.concatenate(super_targets_inverse_masks))
         """
         If your want to do something with the losses, you can wrap the model.
         """

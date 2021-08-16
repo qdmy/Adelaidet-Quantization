@@ -330,7 +330,7 @@ def build_detection_train_loader(cfg, mapper=None):
         else 0,
         proposal_files=cfg.DATASETS.PROPOSAL_FILES_TRAIN if cfg.MODEL.LOAD_PROPOSALS else None,
     )
-    dataset = DatasetFromList(dataset_dicts, classes, class_to_idx, class_ranges, meta, copy=False) # 改为了返回5项值的tuple
+    dataset = DatasetFromList(dataset_dicts, classes, class_to_idx, class_ranges, meta, copy=False, superclass_num = cfg.DATASETS.SUPERCLASS_NUM) # 改为了返回5项值的tuple
 
     # Bin edges for batching images with similar aspect ratios. If ASPECT_RATIO_GROUPING
     # is enabled, we define two bins with an edge at height / width = 1.

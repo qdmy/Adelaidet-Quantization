@@ -14,4 +14,4 @@ MODEL:
     USE_RELU: True
   RETINANET:
     NORM: "SyncBN"
-OUTPUT_DIR: output/coco-detection/retinanet_R_18_1x_Full_SyncBN_teacher_dataloader
+OUTPUT_DIR: output/coco-detection/retinanet_R_18_1x_Full_SyncBN_teacher_dataloader_11superclass

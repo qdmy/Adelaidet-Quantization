@@ -67,7 +67,8 @@ class RetinaNet(nn.Module):
         # task dropout
         self.dropout_p = cfg.MODEL.DROPOUT_P
         # fmt: off
-        self.num_classes              = cfg.MODEL.RETINANET.NUM_CLASSES
+        # self.num_classes            = cfg.MODEL.RETINANET.NUM_CLASSES # 应该是superclass的个数了
+        self.num_classes              = cfg.DATASETS.SUPERCLASS_NUM
         self.in_features              = cfg.MODEL.RETINANET.IN_FEATURES
         # Loss parameters:
         self.focal_loss_alpha         = cfg.MODEL.RETINANET.FOCAL_LOSS_ALPHA
@@ -127,15 +128,15 @@ class RetinaNet(nn.Module):
             gt_instances = [x["targets"].to(self.device) for x in batched_inputs]
         else:
             gt_instances = None
-
-        features = self.backbone(images.tensor)
-        features = [features[f] for f in self.in_features]
-        box_cls, box_delta = self.head(features)
+        # features是一个dict，包含有5个位置的输出
+        features = self.backbone(images.tensor) # images是batch * 3 * height * width
+        features = [features[f] for f in self.in_features] # backbone提取后的5个level的特征都是batchsize * 256 * h * w，feature逐level减半
+        box_cls, box_delta = self.head(features) # cls是batchsize * 108 *h*w, delta是batchsize*36*h*w
         anchors = self.anchor_generator(features)
 
         if self.training:
-            gt_classes, gt_anchors_reg_deltas = self.get_ground_truth(anchors, gt_instances)
-            return self.losses(gt_classes, gt_anchors_reg_deltas, box_cls, box_delta, super_targets_masks, super_targets_inverse_masks)
+            gt_classes, gt_anchors_reg_deltas, matched_idxs_for_mask = self.get_ground_truth(anchors, gt_instances)
+            return self.losses(gt_classes, gt_anchors_reg_deltas, box_cls, box_delta, matched_idxs_for_mask, super_targets_masks, super_targets_inverse_masks)
         else:
             results = self.inference(box_cls, box_delta, anchors, images)
             processed_results = []
@@ -148,7 +149,7 @@ class RetinaNet(nn.Module):
                 processed_results.append({"instances": r})
             return processed_results
 
-    def losses(self, gt_classes, gt_anchors_deltas, pred_class_logits, pred_anchor_deltas, 
+    def losses(self, gt_classes, gt_anchors_deltas, pred_class_logits, pred_anchor_deltas, matched_idxs_for_mask,
     super_targets_masks, super_targets_inverse_masks):
         """
         Args:
@@ -166,19 +167,26 @@ class RetinaNet(nn.Module):
                 storing the loss. Used during training only. The dict keys are:
                 "loss_cls" and "loss_box_reg"
         """
-        
-        pred_class_logits, pred_anchor_deltas = permute_all_cls_and_box_to_N_HWA_K_and_concat(
-            pred_class_logits, pred_anchor_deltas, self.num_classes
-        )  # Shapes: (N x R, K) and (N x R, 4), respectively.
 
-        # task dropout
-        final_mask = sample_dependent_dropout(super_targets_masks, super_targets_inverse_masks, self.dropout_p)
+        pred_class_logits, pred_anchor_deltas = permute_all_cls_and_box_to_N_HWA_K_and_concat( # anchor数量维度是这里的A，所以dropout要在这里做
+            pred_class_logits, pred_anchor_deltas, self.num_classes
+        )  # Shapes: (N x R, K) and (N x R, 4), respectively. 这里把一个batch的图片concat到一起了，需要分开处理task dropout
+        # # task dropout
+        new_super_targets_masks = []
+        new_super_targets_inverse_masks = []
+        for i in range(len(super_targets_masks)):
+            matched_idxs_per_image = matched_idxs_for_mask[i]
+            new_super_targets_masks.append(torch.tensor(super_targets_masks[i], dtype=torch.float32)[matched_idxs_per_image])
+            new_super_targets_inverse_masks.append(torch.tensor(super_targets_inverse_masks[i], dtype=torch.float32)[matched_idxs_per_image])
+        super_targets_masks = torch.cat(new_super_targets_masks, dim=0)
+        super_targets_inverse_masks = torch.cat(new_super_targets_inverse_masks, dim=0)
+
+        final_mask = sample_dependent_dropout(super_targets_masks, super_targets_inverse_masks, self.dropout_p).cuda()
         selected_logits = torch.masked_select(pred_class_logits, final_mask).reshape(pred_class_logits.shape[0], -1)
         selected_log_prob = F.log_softmax(selected_logits, dim=1)
         log_prob = pred_class_logits.new_zeros(pred_class_logits.shape)
         log_prob[final_mask] = selected_log_prob.reshape(-1)
-        pred_class_logits = log_prob # 到这里，就把原本的model输出的预测结果，变为了使用task dropout后的
-
+        pred_class_logits = log_prob  # 到这里，就把原本的model输出的预测结果，变为了使用task dropout后的
 
         gt_classes = gt_classes.flatten()
         gt_anchors_deltas = gt_anchors_deltas.view(-1, 4)
@@ -239,13 +247,16 @@ class RetinaNet(nn.Module):
         """
         gt_classes = []
         gt_anchors_deltas = []
+
+        matched_idxs_for_mask = [] # 用这个来保存每个anchor对应哪个object，进而从mask里取出
         anchors = [Boxes.cat(anchors_i) for anchors_i in anchors]
         # list[Tensor(R, 4)], one for each image
 
         for anchors_per_image, targets_per_image in zip(anchors, targets):
             match_quality_matrix = pairwise_iou(targets_per_image.gt_boxes, anchors_per_image)
             gt_matched_idxs, anchor_labels = self.matcher(match_quality_matrix)
-
+            # anchor_labels 保存的是每个anchor被分类为-1，0，1
+            matched_idxs_for_mask.append(gt_matched_idxs)
             # ground truth box regression
             matched_gt_boxes = targets_per_image[gt_matched_idxs].gt_boxes
             gt_anchors_reg_deltas_i = self.box2box_transform.get_deltas(
@@ -266,7 +277,7 @@ class RetinaNet(nn.Module):
             gt_classes.append(gt_classes_i)
             gt_anchors_deltas.append(gt_anchors_reg_deltas_i)
 
-        return torch.stack(gt_classes), torch.stack(gt_anchors_deltas)
+        return torch.stack(gt_classes), torch.stack(gt_anchors_deltas), torch.stack(matched_idxs_for_mask)
 
     def inference(self, box_cls, box_delta, anchors, images):
         """
@@ -391,12 +402,13 @@ class RetinaNetHead(nn.Module):
         super().__init__()
         # fmt: off
         in_channels      = input_shape[0].channels # 0号元素是bottom up的最后输出
-        num_classes      = cfg.MODEL.RETINANET.NUM_CLASSES
+        # num_classes    = cfg.MODEL.RETINANET.NUM_CLASSES # 应该是superclass的个数了
+        num_classes      = cfg.DATASETS.SUPERCLASS_NUM
         prior_prob       = cfg.MODEL.RETINANET.PRIOR_PROB
         num_anchors      = build_anchor_generator(cfg, input_shape).num_cell_anchors
-        self.norm             = cfg.MODEL.RETINANET.NORM
+        self.norm        = cfg.MODEL.RETINANET.NORM
 
-        self.num_convs        = cfg.MODEL.RETINANET.NUM_CONVS
+        self.num_convs   = cfg.MODEL.RETINANET.NUM_CONVS
         # fmt: on
         assert (
             len(set(num_anchors)) == 1
@@ -416,7 +428,7 @@ class RetinaNetHead(nn.Module):
             if self.norm in ['BN', 'SyncBN']:
                 self.add_module('{}_norm{}'.format("cls", i),
                     nn.ModuleList([get_norm(self.norm, in_channels) for j in range(self.feature_num)])) # 给每个resolution的feature添加一个bn
-                cls_subnet[-2] = getattr(self, "{}_norm{}".format("cls", i))[0] # 把上面if里添加的get_norm替换掉
+                cls_subnet[-2] = getattr(self, "{}_norm{}".format("cls", i))[0] # 把上面if self.norm != ""里添加的get_norm替换掉
 
             bbox_subnet.append(
                 nn.Conv2d(in_channels, in_channels, kernel_size=3, stride=1, padding=1)
