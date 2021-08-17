@@ -61,7 +61,7 @@ def default_argument_parser():
     Returns:
         argparse.ArgumentParser:
     """
-    parser = argparse.ArgumentParser(description="Detectron2 Training")
+    parser = argparse.ArgumentParser(description="Detectron2_ofa Training")
     parser.add_argument("--config-file", default="", metavar="FILE", help="path to config file")
     parser.add_argument(
         "--resume",

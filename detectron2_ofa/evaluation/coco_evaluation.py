@@ -285,13 +285,15 @@ class COCOEvaluator(DatasetEvaluator):
         superclass_name_to_all_child_idx = defaultdict(list)
         for idx, name in enumerate(class_names):
             # mapping each superclass name to its all child idx
+            if name not in class_to_superclass_idx.keys():
+                continue
             superclass_name = label_map[class_to_superclass_idx[name]]
             superclass_name_to_all_child_idx[superclass_name].append(idx)
 
         ######################################### OFA ############################
         # 计算每个超类的平均ap
         results_per_supercategory = []
-        for idx, parent_name, all_child in enumerate(superclass_name_to_all_child_idx.items()):
+        for parent_name, all_child in superclass_name_to_all_child_idx.items():
             # area range index 0: all area ranges
             # max dets index -1: typically 100 per image
             precision = precisions[:, :, all_child, 0, -1]

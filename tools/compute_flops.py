@@ -41,7 +41,7 @@ from detectron2.utils.events import (
 
 from tools.load_bn import load_bn
 
-logger = logging.getLogger("detectron2")
+logger = logging.getLogger("detectron2_ofa")
 
 
 def setup(args):

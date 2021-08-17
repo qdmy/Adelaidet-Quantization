@@ -25,7 +25,7 @@ def collect_torch_env():
 
 
 def get_env_module():
-    var_name = "DETECTRON2_ENV_MODULE"
+    var_name = "DETECTRON2_OFA_ENV_MODULE"
     return var_name, os.environ.get(var_name, "<not set>")
 
 
@@ -37,10 +37,10 @@ def collect_env_info():
     try:
         from detectron2 import _C
     except ImportError:
-        data.append(("detectron2._C", "failed to import"))
+        data.append(("detectron2_ofa._C", "failed to import"))
     else:
-        data.append(("Detectron2 Compiler", _C.get_compiler_version()))
-        data.append(("Detectron2 CUDA Compiler", _C.get_cuda_version()))
+        data.append(("Detectron2_ofa Compiler", _C.get_compiler_version()))
+        data.append(("Detectron2_ofa CUDA Compiler", _C.get_cuda_version()))
 
     data.append(get_env_module())
     data.append(("PyTorch", torch.__version__))

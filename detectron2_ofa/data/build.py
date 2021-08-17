@@ -383,7 +383,7 @@ def build_detection_test_loader(cfg, dataset_name, mapper=None):
         DataLoader: a torch DataLoader, that loads the given detection
         dataset, with test-time transformation and batching.
     """
-    dataset_dicts, classes, class_to_idx, class_ranges = get_detection_dataset_dicts(
+    dataset_dicts, classes, class_to_idx, class_ranges, meta = get_detection_dataset_dicts(
         [dataset_name],
         filter_empty=False,
         proposal_files=[
@@ -393,10 +393,10 @@ def build_detection_test_loader(cfg, dataset_name, mapper=None):
         else None,
     )
 
-    dataset = DatasetFromList(dataset_dicts)
+    dataset = DatasetFromList(dataset_dicts[:50], classes, class_to_idx, class_ranges, meta, copy=False, superclass_num = cfg.DATASETS.SUPERCLASS_NUM)
     if mapper is None:
         mapper = DatasetMapper(cfg, False)
-    dataset = MapDataset(dataset, classes, class_to_idx, class_ranges, mapper)
+    dataset = MapDataset(dataset, mapper)
 
     sampler = samplers.InferenceSampler(len(dataset))
     # Always use 1 image per worker during inference since this is the

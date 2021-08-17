@@ -62,7 +62,7 @@ for m in [
     "cv2",
     "scipy",
     "portalocker",
-    "detectron2._C",
+    "detectron2_ofa._C",
     "pycocotools",
     "pycocotools.mask",
     "pycocotools.coco",
@@ -74,9 +74,9 @@ sys.modules["cv2"].__version__ = "3.4"
 import detectron2  # isort: skip
 
 
-project = "detectron2"
-copyright = "2019, detectron2 contributors"
-author = "detectron2 contributors"
+project = "detectron2_ofa"
+copyright = "2019, detectron2_ofa contributors"
+author = "detectron2_ofa contributors"
 
 # The short X.Y version
 version = detectron2.__version__

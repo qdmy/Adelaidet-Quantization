@@ -48,7 +48,7 @@ def _configure_libraries():
     """
     # An environment option to disable `import cv2` globally,
     # in case it leads to negative performance impact
-    disable_cv2 = int(os.environ.get("DETECTRON2_DISABLE_CV2", False))
+    disable_cv2 = int(os.environ.get("DETECTRON2_OFA_DISABLE_CV2", False))
     if disable_cv2:
         sys.modules["cv2"] = None
     else:
@@ -80,7 +80,7 @@ def setup_environment():
 
     _configure_libraries()
 
-    custom_module_path = os.environ.get("DETECTRON2_ENV_MODULE")
+    custom_module_path = os.environ.get("DETECTRON2_OFA_ENV_MODULE")
 
     if custom_module_path:
         setup_custom_environment(custom_module_path)
@@ -95,7 +95,7 @@ def setup_custom_environment(custom_module):
     module, and run the setup function.
     """
     if custom_module.endswith(".py"):
-        module = _import_file("detectron2.utils.env.custom_module", custom_module)
+        module = _import_file("detectron2_ofa.utils.env.custom_module", custom_module)
     else:
         module = importlib.import_module(custom_module)
     assert hasattr(module, "setup_environment") and callable(module.setup_environment), (

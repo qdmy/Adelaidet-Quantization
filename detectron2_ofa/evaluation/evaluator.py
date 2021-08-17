@@ -5,7 +5,7 @@ import time
 from collections import OrderedDict
 from contextlib import contextmanager
 import torch
-
+import numpy as np
 from detectron2_ofa.utils.comm import is_main_process
 
 
@@ -111,7 +111,10 @@ def inference_on_dataset(model, data_loader, evaluator):
     start_time = time.time()
     total_compute_time = 0
     with inference_context(model), torch.no_grad():
-        for idx, inputs, super_targets_masks, super_targets_inverse_masks, super_targets_idxs, super_targets in enumerate(data_loader):
+        for idx, data in enumerate(data_loader):
+            data = np.array(data, dtype=object).T
+            inputs, super_targets_masks, super_targets_inverse_masks, super_targets_idxs, super_targets = data
+
             if idx == num_warmup:
                 start_time = time.time()
                 total_compute_time = 0
