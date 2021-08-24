@@ -2,6 +2,7 @@
 import copy
 import logging
 import random
+import torch
 import torch.utils.data as data
 import numpy as np
 from detectron2_ofa.utils.serialize import PicklableWrapper
@@ -66,7 +67,7 @@ class DatasetFromList(data.Dataset):
     Wrap a list to a torch Dataset. It produces elements of the list as data.
     """
 
-    def __init__(self, lst: list, classes, class_to_idx, ranges, meta, copy: bool = True, superclass_num = None):
+    def __init__(self, lst: list, ranges, meta, in_hier=None, copy: bool = True):
         """
         Args:
             lst (list): a list which contains elements to produce.
@@ -76,10 +77,8 @@ class DatasetFromList(data.Dataset):
         """
         self._lst = lst
         self._copy = copy
-        # superclass image load
-        self.classes = classes
-        self.class_to_idx = class_to_idx
         self.meta = meta
+        self.in_hier = in_hier
         # 下面的数据都是针对每一个物体的，按照图片的顺序，然后每张图片按照其中物体的顺序，与分类任务还是不一样的
         # create a dict contain the start and end anno of each image's objects
         self.targets = []
@@ -91,11 +90,26 @@ class DatasetFromList(data.Dataset):
                 self.targets.append(obj["category_id"])
                 end += 1
             self.images_part.append([start, end])
-        # self.targets = [obj["category_id"] for s in self._dataset for obj in s["annotations"]]
 
-        # self.class_to_superclass = get_class_to_superclass(ranges) # 这样重新对应，会导致idx的对应关系不一致
-        self.class_to_superclass = np.array(range(superclass_num))
-        self.super_targets = self.class_to_superclass[self.targets]  # 在load_coco时已经有个id_map把子类映射为超类，所以这里二者是一样的值
+        # 这里获取的targets已经是0-80的label了，不需要映射了
+        # self.category_ids = self.targets
+
+        self.class_to_superclass = np.ones(len(self.in_hier.in_wnids_child)) * -1 # 应该是一个长度为80的array
+
+        for ran in ranges: # ranges里保存的是连续的id，是属于0-80范围的
+            for classnum in ran:
+                classname = self.in_hier.num_to_name_child[classnum]
+                classwnid = self.in_hier.name_to_wnid_child[classname]
+                parentwnid = self.in_hier.tree_child[classwnid].parent_wnid
+                parentnum = self.in_hier.wnid_to_num_parent[parentwnid]
+                self.class_to_superclass[classnum] = parentnum
+
+        # 验证一下一致性，之前有定义一个连续id到超类id的字典
+        for num, super_idx in self.meta.class_to_superclass_idx.items():
+            assert self.class_to_superclass[num] == super_idx, 'inconsistency between num and superclass idx projection'
+
+        # self.super_targets里不应该有-1
+        self.super_targets = self.class_to_superclass[self.targets]
 
         self.n_superclass = len(ranges)
         self.super_targets_masks = (self.super_targets.reshape(-1, 1) == self.class_to_superclass).astype("single")

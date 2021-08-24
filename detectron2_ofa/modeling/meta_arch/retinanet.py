@@ -67,8 +67,8 @@ class RetinaNet(nn.Module):
         # task dropout
         self.dropout_p = cfg.MODEL.DROPOUT_P
         # fmt: off
-        # self.num_classes            = cfg.MODEL.RETINANET.NUM_CLASSES # 应该是superclass的个数了
-        self.num_classes              = cfg.DATASETS.SUPERCLASS_NUM
+        self.num_classes            = cfg.MODEL.RETINANET.NUM_CLASSES # 应该是superclass的个数了
+        # self.num_classes              = cfg.DATASETS.SUPERCLASS_NUM
         self.in_features              = cfg.MODEL.RETINANET.IN_FEATURES
         # Loss parameters:
         self.focal_loss_alpha         = cfg.MODEL.RETINANET.FOCAL_LOSS_ALPHA
@@ -131,7 +131,7 @@ class RetinaNet(nn.Module):
         # features是一个dict，包含有5个位置的输出
         features = self.backbone(images.tensor) # images是batch * 3 * height * width
         features = [features[f] for f in self.in_features] # backbone提取后的5个level的特征都是batchsize * 256 * h * w，feature逐level减半
-        box_cls, box_delta = self.head(features) # cls是batchsize * 108 *h*w, delta是batchsize*36*h*w
+        box_cls, box_delta = self.head(features) # cls是batchsize * (9*80才对，9是指9个box) *h*w, delta是batchsize*36*h*w
         anchors = self.anchor_generator(features)
 
         if self.training:
@@ -332,7 +332,7 @@ class RetinaNet(nn.Module):
         class_idxs_all = []
 
         masked_total_accuracy_metric = AccuracyMetric(topk=(1, 5))
-        superclass_accuracy_metric = SuperclassAccuracyMetric(topk=(1, 5), n_superclass=12)
+        superclass_accuracy_metric = SuperclassAccuracyMetric(topk=(1, 5), n_superclass=11)
 
         # Iterate over every feature level
         for box_cls_i, box_reg_i, anchors_i in zip(box_cls, box_delta, anchors):
@@ -402,8 +402,8 @@ class RetinaNetHead(nn.Module):
         super().__init__()
         # fmt: off
         in_channels      = input_shape[0].channels # 0号元素是bottom up的最后输出
-        # num_classes    = cfg.MODEL.RETINANET.NUM_CLASSES # 应该是superclass的个数了
-        num_classes      = cfg.DATASETS.SUPERCLASS_NUM
+        num_classes    = cfg.MODEL.RETINANET.NUM_CLASSES # 应该还是原来的class num
+        # num_classes      = cfg.DATASETS.SUPERCLASS_NUM
         prior_prob       = cfg.MODEL.RETINANET.PRIOR_PROB
         num_anchors      = build_anchor_generator(cfg, input_shape).num_cell_anchors
         self.norm        = cfg.MODEL.RETINANET.NORM

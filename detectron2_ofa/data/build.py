@@ -256,7 +256,7 @@ def get_detection_dataset_dicts(
     dataset_dicts = [DatasetCatalog.get(dataset_name) for dataset_name in dataset_names]
 
     # dataset_name必须长度为1， 代码才没问题
-    dataset_dicts, classes, class_to_idx, class_ranges, meta = [dataset_dicts[0][0]], dataset_dicts[0][1], dataset_dicts[0][2], dataset_dicts[0][3], dataset_dicts[0][4]
+    dataset_dicts, class_ranges, meta, in_hier = [dataset_dicts[0][0]], dataset_dicts[0][1], dataset_dicts[0][2], dataset_dicts[0][3]
 
     for dataset_name, dicts in zip(dataset_names, dataset_dicts):
         assert len(dicts), "Dataset '{}' is empty!".format(dataset_name)
@@ -286,7 +286,7 @@ def get_detection_dataset_dicts(
             print_instances_class_histogram(dataset_dicts, class_names)
         except AttributeError:  # class names are not available for this dataset
             pass
-    return dataset_dicts, classes, class_to_idx, class_ranges, meta
+    return dataset_dicts, class_ranges, meta, in_hier
 
 
 def build_detection_train_loader(cfg, mapper=None):
@@ -322,7 +322,7 @@ def build_detection_train_loader(cfg, mapper=None):
     )
     images_per_worker = images_per_batch // num_workers
 
-    dataset_dicts, classes, class_to_idx, class_ranges, meta = get_detection_dataset_dicts(
+    dataset_dicts, class_ranges, meta, in_hier = get_detection_dataset_dicts(
         cfg.DATASETS.TRAIN,
         filter_empty=cfg.DATALOADER.FILTER_EMPTY_ANNOTATIONS,
         min_keypoints=cfg.MODEL.ROI_KEYPOINT_HEAD.MIN_KEYPOINTS_PER_IMAGE
@@ -330,7 +330,7 @@ def build_detection_train_loader(cfg, mapper=None):
         else 0,
         proposal_files=cfg.DATASETS.PROPOSAL_FILES_TRAIN if cfg.MODEL.LOAD_PROPOSALS else None,
     )
-    dataset = DatasetFromList(dataset_dicts, classes, class_to_idx, class_ranges, meta, copy=False, superclass_num = cfg.DATASETS.SUPERCLASS_NUM) # 改为了返回5项值的tuple
+    dataset = DatasetFromList(dataset_dicts, class_ranges, meta, in_hier, copy=False) # 改为了返回5项值的tuple
 
     # Bin edges for batching images with similar aspect ratios. If ASPECT_RATIO_GROUPING
     # is enabled, we define two bins with an edge at height / width = 1.
@@ -383,7 +383,7 @@ def build_detection_test_loader(cfg, dataset_name, mapper=None):
         DataLoader: a torch DataLoader, that loads the given detection
         dataset, with test-time transformation and batching.
     """
-    dataset_dicts, classes, class_to_idx, class_ranges, meta = get_detection_dataset_dicts(
+    dataset_dicts, class_ranges, meta, in_hier = get_detection_dataset_dicts(
         [dataset_name],
         filter_empty=False,
         proposal_files=[
@@ -393,7 +393,7 @@ def build_detection_test_loader(cfg, dataset_name, mapper=None):
         else None,
     )
 
-    dataset = DatasetFromList(dataset_dicts[:50], classes, class_to_idx, class_ranges, meta, copy=False, superclass_num = cfg.DATASETS.SUPERCLASS_NUM)
+    dataset = DatasetFromList(dataset_dicts, class_ranges, meta, in_hier, copy=False)
     if mapper is None:
         mapper = DatasetMapper(cfg, False)
     dataset = MapDataset(dataset, mapper)
