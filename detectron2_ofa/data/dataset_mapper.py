@@ -108,11 +108,12 @@ class DatasetMapper:
                 dataset_dict, image_shape, transforms, self.min_box_side_len, self.proposal_topk
             )
 
+        # 原本对于不是train过程的data的处理直接把evaluate时图片的annotation去掉了，所以要挪到和最后一起去返回，从而保留每张图片的instances
         if not self.is_train:
-            dataset_dict.pop("annotations", None)
+            # dataset_dict.pop("annotations", None)
             dataset_dict.pop("sem_seg_file_name", None)
             dataset_dict.pop("pano_seg_file_name", None)
-            return dataset_dict#, super_targets_mask, super_targets_inverse_mask, super_targets_idx, super_target
+            # return dataset_dict#, super_targets_mask, super_targets_inverse_mask, super_targets_idx, super_target
 
         if "annotations" in dataset_dict:
             # USER: Modify this if you want to keep them for some reason.
@@ -158,4 +159,5 @@ class DatasetMapper:
             basis_sem_gt = transforms.apply_segmentation(basis_sem_gt)
             basis_sem_gt = torch.as_tensor(basis_sem_gt.astype("long"))
             dataset_dict["basis_sem"] = basis_sem_gt
+
         return dataset_dict#, super_targets_mask, super_targets_inverse_mask, super_targets_idx, super_target

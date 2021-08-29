@@ -15,5 +15,5 @@ MODEL:
   RETINANET:
     NORM: "SyncBN"
 SOLVER:
-  IMS_PER_BATCH: 4
+  IMS_PER_BATCH: 1
 OUTPUT_DIR: output/coco-detection/retinanet_R_18_1x_Full_SyncBN_teacher_dataloader_11superclass

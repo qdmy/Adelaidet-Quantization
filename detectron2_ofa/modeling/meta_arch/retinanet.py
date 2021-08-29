@@ -67,8 +67,8 @@ class RetinaNet(nn.Module):
         # task dropout
         self.dropout_p = cfg.MODEL.DROPOUT_P
         # fmt: off
-        self.num_classes            = cfg.MODEL.RETINANET.NUM_CLASSES # 应该是superclass的个数了
-        # self.num_classes              = cfg.DATASETS.SUPERCLASS_NUM
+        self.num_classes              = cfg.MODEL.RETINANET.NUM_CLASSES # 应该是superclass的个数了
+        self.num_super_classes        = cfg.DATASETS.SUPERCLASS_NUM
         self.in_features              = cfg.MODEL.RETINANET.IN_FEATURES
         # Loss parameters:
         self.focal_loss_alpha         = cfg.MODEL.RETINANET.FOCAL_LOSS_ALPHA
@@ -87,6 +87,11 @@ class RetinaNet(nn.Module):
         self.head = RetinaNetHead(cfg, feature_shapes)
         self.anchor_generator = build_anchor_generator(cfg, feature_shapes)
 
+        # 计算acc
+        self.total_accuracy_metric = AccuracyMetric(topk=(1, 5))
+        self.masked_total_accuracy_metric = AccuracyMetric(topk=(1, 5))
+        self.superclass_accuracy_metric = SuperclassAccuracyMetric(topk=(1, 5), n_superclass=self.num_super_classes)
+
         # Matching and loss
         self.box2box_transform = Box2BoxTransform(weights=cfg.MODEL.RPN.BBOX_REG_WEIGHTS)
         self.matcher = Matcher(
@@ -100,7 +105,7 @@ class RetinaNet(nn.Module):
         self.normalizer = lambda x: (x - pixel_mean) / pixel_std
         self.to(self.device)
 
-    def forward(self, batched_inputs, super_targets_masks=None, super_targets_inverse_masks=None):
+    def forward(self, batched_inputs, super_targets_masks=None, super_targets_inverse_masks=None, super_targets_idxs=None, super_targets=None):
         """
         Args:
             batched_inputs: a list, batched outputs of :class:`DatasetMapper` .
@@ -134,11 +139,12 @@ class RetinaNet(nn.Module):
         box_cls, box_delta = self.head(features) # cls是batchsize * (9*80才对，9是指9个box) *h*w, delta是batchsize*36*h*w
         anchors = self.anchor_generator(features)
 
+        gt_classes, gt_anchors_reg_deltas, matched_idxs_for_mask = self.get_ground_truth(anchors, gt_instances) # gt_classes在train和evaluate都要用，所以拿到外面来
         if self.training:
-            gt_classes, gt_anchors_reg_deltas, matched_idxs_for_mask = self.get_ground_truth(anchors, gt_instances)
             return self.losses(gt_classes, gt_anchors_reg_deltas, box_cls, box_delta, matched_idxs_for_mask, super_targets_masks, super_targets_inverse_masks)
         else:
-            results = self.inference(box_cls, box_delta, anchors, images)
+            results = self.inference(box_cls, box_delta, anchors, images, super_targets_idxs, super_targets,
+                                     gt_classes, gt_anchors_reg_deltas, matched_idxs_for_mask)
             processed_results = []
             for results_per_image, input_per_image, image_size in zip(
                 results, batched_inputs, images.image_sizes
@@ -279,7 +285,8 @@ class RetinaNet(nn.Module):
 
         return torch.stack(gt_classes), torch.stack(gt_anchors_deltas), torch.stack(matched_idxs_for_mask)
 
-    def inference(self, box_cls, box_delta, anchors, images):
+    def inference(self, box_cls, box_delta, anchors, images, super_targets_idxs=None, super_targets=None,
+                  gt_classes=None, gt_anchors_deltas=None, matched_idxs_for_acc=None):
         """
         Arguments:
             box_cls, box_delta: Same as the output of :meth:`RetinaNetHead.forward`
@@ -296,21 +303,38 @@ class RetinaNet(nn.Module):
         assert len(anchors) == len(images)
         results = []
 
-        box_cls = [permute_to_N_HWA_K(x, self.num_classes) for x in box_cls]
+        box_cls = [permute_to_N_HWA_K(x, self.num_classes) for x in box_cls] # 这里就是模型预测的结果
         box_delta = [permute_to_N_HWA_K(x, 4) for x in box_delta]
         # list[Tensor], one per level, each has shape (N, Hi x Wi x A, K or 4)
 
-        for img_idx, anchors_per_image in enumerate(anchors):
+        # 这里处理一下以便计算acc
+        pred_class_logits = cat(box_cls, dim=1).view(-1, self.num_classes)
+        pred_anchor_deltas = cat(box_delta, dim=1).view(-1, 4)
+
+        # 为了计算acc才引入的gt_classes参数，过程和losses函数里的一样的，pred_class_logits, pred_anchor_deltas
+        # gt_classes = gt_classes.flatten() # 算acc的时候应该只需要这个gt_classes，下面的代码都不需要
+        # gt_anchors_deltas = gt_anchors_deltas.view(-1, 4)
+        # valid_idxs = gt_classes >= 0
+        # foreground_idxs = (gt_classes >= 0) & (gt_classes != self.num_classes)
+        # num_foreground = foreground_idxs.sum()
+        # gt_classes_target = torch.zeros_like(pred_class_logits)
+        # gt_classes_target[foreground_idxs, gt_classes[foreground_idxs]] = 1
+
+        for img_idx, (anchors_per_image, targets_per_image, super_targets_idx_per_image, super_targets_per_image, matched_idxs_per_image) \
+                in enumerate(zip(anchors, gt_classes, super_targets_idxs, super_targets, matched_idxs_for_acc)):
             image_size = images.image_sizes[img_idx]
             box_cls_per_image = [box_cls_per_level[img_idx] for box_cls_per_level in box_cls]
             box_reg_per_image = [box_reg_per_level[img_idx] for box_reg_per_level in box_delta]
             results_per_image = self.inference_single_image(
-                box_cls_per_image, box_reg_per_image, anchors_per_image, tuple(image_size),
+                box_cls_per_image, box_reg_per_image, anchors_per_image, tuple(image_size), targets_per_image,
+                torch.tensor(super_targets_idx_per_image).cuda(), torch.tensor(super_targets_per_image).cuda(), matched_idxs_per_image,
             )
             results.append(results_per_image)
+
         return results
 
-    def inference_single_image(self, box_cls, box_delta, anchors, image_size):
+    def inference_single_image(self, box_cls, box_delta, anchors, image_size, targets,
+                               super_targets_idx, super_targets, matched_idxs):
         """
         Single-image inference. Return bounding-box detection results by thresholding
         on scores and applying non-maximum suppression (NMS).
@@ -327,23 +351,37 @@ class RetinaNet(nn.Module):
         Returns:
             Same as `inference`, but for only one image.
         """
+        # 要像loss函数里处理mask一样，把targets和super targets也处理一下，让每个feature level的每个box有一个对应的
+        super_targets_idx = super_targets_idx[matched_idxs]
+        super_targets = super_targets[matched_idxs]
+
         boxes_all = []
         scores_all = []
         class_idxs_all = []
 
-        masked_total_accuracy_metric = AccuracyMetric(topk=(1, 5))
-        superclass_accuracy_metric = SuperclassAccuracyMetric(topk=(1, 5), n_superclass=11)
-
+        final_box_cls = []
+        final_targets = []
+        final_output_logits = []
+        final_super_targets = []
         # Iterate over every feature level
         for box_cls_i, box_reg_i, anchors_i in zip(box_cls, box_delta, anchors):
-            # ofa 
-            # selected_logits = torch.gather(box_cls_i, 1, super_targets_idx)
-            # output_logits = box_cls_i.new_zeros(box_cls_i.shape)
-            # output_logits.scatter_(dim=1, index=super_targets_idx, src=selected_logits)
-            # masked_total_accuracy_metric.update(output_logits, box_cls_i)
-            # superclass_accuracy_metric.update(output_logits, box_cls_i, super_targets)
-            
-            # (HxWxAxK,)
+            # ofa
+            box_num = box_cls_i.size(0)
+            # 只取对应当前feature level的
+            targets_i = targets[:box_num]
+            super_targets_idx_i = super_targets_idx[:box_num]
+            super_targets_i = super_targets[:box_num]
+            # 把上一个feature level的去掉
+            targets = targets[box_num:]
+            super_targets_idx = super_targets_idx[box_num:]
+            super_targets = super_targets[box_num:]
+
+            selected_logits_i = torch.gather(box_cls_i, 1, super_targets_idx_i)
+            output_logits_i = box_cls_i.new_zeros(box_cls_i.shape)
+            output_logits_i.scatter_(dim=1, index=super_targets_idx_i, src=selected_logits_i)
+            box_cls_i_for_acc = box_cls_i # 备份一个用来后面计算acc
+
+            # (HxWxAxK,), 依次处理每个feature level的预测结果
             box_cls_i = box_cls_i.flatten().sigmoid_()
 
             # Keep top k top scoring indices only.
@@ -370,8 +408,14 @@ class RetinaNet(nn.Module):
             scores_all.append(predicted_prob)
             class_idxs_all.append(classes_idxs)
 
-        boxes_all, scores_all, class_idxs_all = [
-            cat(x) for x in [boxes_all, scores_all, class_idxs_all]
+            # 用来计算acc
+            final_box_cls.append(box_cls_i_for_acc[anchor_idxs])
+            final_targets.append(targets_i[anchor_idxs])
+            final_output_logits.append(output_logits_i[anchor_idxs])
+            final_super_targets.append(super_targets_i[anchor_idxs])
+
+        boxes_all, scores_all, class_idxs_all, final_box_cls, final_output_logits, final_super_targets, final_targets = [
+            cat(x) for x in [boxes_all, scores_all, class_idxs_all, final_box_cls, final_output_logits, final_super_targets, final_targets]
         ]
         keep = batched_nms(boxes_all, scores_all, class_idxs_all, self.nms_threshold)
         keep = keep[: self.max_detections_per_image]
@@ -380,6 +424,12 @@ class RetinaNet(nn.Module):
         result.pred_boxes = Boxes(boxes_all[keep])
         result.scores = scores_all[keep]
         result.pred_classes = class_idxs_all[keep]
+
+        # 就像分类里把batch size设为1那样，在这里每张图片update一次
+        self.total_accuracy_metric.update(final_box_cls, final_targets)
+        self.masked_total_accuracy_metric.update(final_output_logits, final_targets)
+        self.superclass_accuracy_metric.update(final_output_logits, final_targets, final_super_targets)
+
         return result
 
     def preprocess_image(self, batched_inputs):

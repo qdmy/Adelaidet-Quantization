@@ -500,6 +500,28 @@ class DefaultTrainer(SimpleTrainer):
                 logger.info("Evaluation results for {} in csv format:".format(dataset_name))
                 print_csv_format(results_i)
 
+        # 打印acc
+        logger.info("total_accuracy_top1: {}, total_accuracy_top5: {}".format(model.total_accuracy_metric.at(1).rate, model.total_accuracy_metric.at(5).rate))
+        logger.info("masked_total_accuracy_top1: {}, masked_total_accuracy_top5: {}".format(model.masked_total_accuracy_metric.at(1).rate, model.masked_total_accuracy_metric.at(5).rate))
+        # 打印superclass
+        superclass_top1_acc1 = model.superclass_accuracy_metric.at(1)
+        superclass_top5_acc5 = model.superclass_accuracy_metric.at(5)
+        for superclass_idx in range(len(superclass_top1_acc1)):
+            logger.info(
+                ", ".join(
+                    [
+                        f"superclass={superclass_idx}",
+                        f"top1-accuracy={superclass_top1_acc1[superclass_idx].rate * 100:.2f}%",
+                        f"top5-accuracy={superclass_top5_acc5[superclass_idx].rate * 100:.2f}%",
+                    ]
+                )
+            )
+
+        subclass_acc_str = [f"{acc.rate * 100:.2f}%" for superclass_idx, acc in enumerate(superclass_top1_acc1)]
+        subclass_acc_str = ",".join(subclass_acc_str)
+        subclass_acc_str = "Acc: " + subclass_acc_str
+        logger.info(subclass_acc_str)
+
         if len(results) == 1:
             results = list(results.values())[0]
         return results

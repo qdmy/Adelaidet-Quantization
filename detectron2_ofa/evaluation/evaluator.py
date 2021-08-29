@@ -120,7 +120,7 @@ def inference_on_dataset(model, data_loader, evaluator):
                 total_compute_time = 0
 
             start_compute_time = time.time()
-            outputs = model(inputs)
+            outputs = model(inputs, super_targets_idxs=super_targets_idxs, super_targets=super_targets)
             torch.cuda.synchronize()
             total_compute_time += time.time() - start_compute_time
             evaluator.process(inputs, outputs)

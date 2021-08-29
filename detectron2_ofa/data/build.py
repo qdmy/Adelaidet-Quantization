@@ -385,7 +385,7 @@ def build_detection_test_loader(cfg, dataset_name, mapper=None):
     """
     dataset_dicts, class_ranges, meta, in_hier = get_detection_dataset_dicts(
         [dataset_name],
-        filter_empty=False,
+        filter_empty=True, # 原本是false, 为什么要设为false？
         proposal_files=[
             cfg.DATASETS.PROPOSAL_FILES_TEST[list(cfg.DATASETS.TEST).index(dataset_name)]
         ]
@@ -393,7 +393,7 @@ def build_detection_test_loader(cfg, dataset_name, mapper=None):
         else None,
     )
 
-    dataset = DatasetFromList(dataset_dicts, class_ranges, meta, in_hier, copy=False)
+    dataset = DatasetFromList(dataset_dicts, class_ranges, meta, in_hier, copy=False) # for debug
     if mapper is None:
         mapper = DatasetMapper(cfg, False)
     dataset = MapDataset(dataset, mapper)
