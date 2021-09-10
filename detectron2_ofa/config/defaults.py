@@ -591,6 +591,11 @@ _C.MODEL.SMALBLEND.CANONICAL_LEVEL = 3
 # These options apply to both
 # ---------------------------------------------------------------------------- #
 _C.MODEL.RESNETS = CN()
+# ofa的3个搜索空间
+_C.MODEL.RESNETS.DEPTH_LIST = [0] # depth_list不会搞，先不管
+_C.MODEL.RESNETS.EXPAND_RATIO_LIST = [0.2, 0.25, 0.35]
+_C.MODEL.RESNETS.WIDTH_MULT_LIST = [0.65, 0.8, 1.0]
+_C.MODEL.RESNETS.LINEAR_DROPOUT = 0
 
 _C.MODEL.RESNETS.DEPTH = 50
 _C.MODEL.RESNETS.OUT_FEATURES = ["res4"]  # res4 for C4 backbone, res2..5 for FPN backbone

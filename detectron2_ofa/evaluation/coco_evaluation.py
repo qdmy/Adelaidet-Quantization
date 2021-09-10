@@ -283,13 +283,7 @@ class COCOEvaluator(DatasetEvaluator):
         label_map = self._metadata.label_map # 保存superclass每一类的idx对应的superclass name
         
         superclass_name_to_all_child_idx = defaultdict(list)
-        # for idx, name in enumerate(class_names): # class_names里的顺序和class_to_superclass_idx是对应的
-        #     # mapping each superclass name to its all child idx
-        #     if idx not in class_idx_to_superclass_idx.keys():
-        #         continue
-        #     superclass_name = label_map[class_idx_to_superclass_idx[idx]]
-        #     superclass_name_to_all_child_idx[superclass_name].append(idx)
-        for class_idx, superclass_idx in class_idx_to_superclass_idx.items():
+        for class_idx, superclass_idx in class_idx_to_superclass_idx.items(): # class_id是连续的
             superclass_name = label_map[superclass_idx]
             superclass_name_to_all_child_idx[superclass_name].append(class_idx)
         ######################################### OFA ############################

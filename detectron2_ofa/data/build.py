@@ -409,7 +409,7 @@ def build_detection_test_loader(cfg, dataset_name, mapper=None):
         batch_sampler=batch_sampler,
         collate_fn=trivial_batch_collator,
     )
-    return data_loader
+    return data_loader, meta
 
 
 def trivial_batch_collator(batch):

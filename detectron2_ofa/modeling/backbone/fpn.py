@@ -8,13 +8,13 @@ from detectron2_ofa.layers import Conv2d, ShapeSpec, get_norm
 
 from .backbone import Backbone
 from .build import BACKBONE_REGISTRY
-from .resnet import build_resnet_backbone, build_resnet_large_backbone
+from .resnet import build_resnet_backbone, build_resnet_ofa_backbone, build_resnet_teacher_backbone
 from .qresnet import build_qresnet_backbone
 from .resnet_lpf import build_resnet_lpf_backbone
 
 __all__ = ["build_resnet_fpn_backbone",
            "build_retinanet_resnet_fpn_backbone",
-           "build_retinanet_resnet_large_fpn_backbone",
+           "build_retinanet_resnet_teacher_fpn_backbone",
            "build_fcos_resnet_fpn_backbone",
            "build_fcos_resnet_lpf_fpn_backbone",
            "FPN"]
@@ -289,7 +289,7 @@ def build_retinanet_resnet_fpn_backbone(cfg, input_shape: ShapeSpec):
 
 # teacher network ofa
 @BACKBONE_REGISTRY.register()
-def build_retinanet_resnet_large_fpn_backbone(cfg, input_shape: ShapeSpec):
+def build_retinanet_resnet_teacher_fpn_backbone(cfg, input_shape: ShapeSpec):
     """
     Args:
         cfg: a detectron2 CfgNode
@@ -297,7 +297,36 @@ def build_retinanet_resnet_large_fpn_backbone(cfg, input_shape: ShapeSpec):
     Returns:
         backbone (Backbone): backbone module, must be a subclass of :class:`Backbone`.
     """
-    bottom_up = build_resnet_large_backbone(cfg, input_shape)
+    # bottom_up = build_resnet_large_backbone(cfg, input_shape)
+    bottom_up = build_resnet_teacher_backbone(cfg, input_shape)
+    in_features = cfg.MODEL.FPN.IN_FEATURES
+    out_channels = cfg.MODEL.FPN.OUT_CHANNELS
+    norm = cfg.MODEL.FPN.NORM
+    activation = cfg.MODEL.FPN.USE_RELU
+    in_channels_p6p7 = bottom_up.out_feature_channels["res5"]
+    backbone = FPN(
+        bottom_up=bottom_up,
+        in_features=in_features,
+        out_channels=out_channels,
+        norm=norm,
+        activation=activation,
+        top_block=LastLevelP6P7(in_channels_p6p7, out_channels, norm=norm, activation=activation),
+        fuse_type=cfg.MODEL.FPN.FUSE_TYPE,
+    )
+    return backbone
+
+
+# teacher network ofa
+@BACKBONE_REGISTRY.register()
+def build_retinanet_resnet_ofa_fpn_backbone(cfg, input_shape: ShapeSpec):
+    """
+    Args:
+        cfg: a detectron2 CfgNode
+
+    Returns:
+        backbone (Backbone): backbone module, must be a subclass of :class:`Backbone`.
+    """
+    bottom_up = build_resnet_ofa_backbone(cfg, input_shape)
     in_features = cfg.MODEL.FPN.IN_FEATURES
     out_channels = cfg.MODEL.FPN.OUT_CHANNELS
     norm = cfg.MODEL.FPN.NORM

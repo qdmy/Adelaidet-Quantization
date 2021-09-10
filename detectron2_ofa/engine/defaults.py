@@ -474,7 +474,8 @@ class DefaultTrainer(SimpleTrainer):
 
         results = OrderedDict()
         for idx, dataset_name in enumerate(cfg.DATASETS.TEST):
-            data_loader = cls.build_test_loader(cfg, dataset_name)
+            data_loader, meta = cls.build_test_loader(cfg, dataset_name)
+            index_to_superclass_name = meta.label_map
             # When evaluators are passed in as arguments,
             # implicitly assume that evaluators can be created before data_loader.
             if evaluators is not None:
@@ -510,7 +511,7 @@ class DefaultTrainer(SimpleTrainer):
             logger.info(
                 ", ".join(
                     [
-                        f"superclass={superclass_idx}",
+                        f"superclass={superclass_idx}-{index_to_superclass_name[superclass_idx]}",
                         f"top1-accuracy={superclass_top1_acc1[superclass_idx].rate * 100:.2f}%",
                         f"top5-accuracy={superclass_top5_acc5[superclass_idx].rate * 100:.2f}%",
                     ]

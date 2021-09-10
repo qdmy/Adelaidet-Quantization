@@ -1,13 +1,13 @@
 import torch.nn as nn
 
 from codebase.third_party.spos_ofa.ofa.utils.layers import set_layer_from_config, ConvLayer, IdentityLayer, LinearLayer
-from codebase.third_party.spos_ofa.ofa.utils.layers import ResNetBottleneckBlock, ResidualBlock
+from codebase.third_party.spos_ofa.ofa.utils.layers import ResNetBottleneckBlock, ResidualBlock, ResNetBasicBlock
 from codebase.third_party.spos_ofa.ofa.utils import make_divisible, MyNetwork, MyGlobalAvgPool2d
 
 from detectron2.modeling.backbone.backbone import Backbone
 from detectron2.modeling.backbone.build import BACKBONE_REGISTRY
 
-__all__ = ['ResNets', 'ResNet50', 'ResNet50D']
+__all__ = ['ResNets', 'ResNet18', 'ResNet18Large', 'ResNet50', 'ResNet50Large', 'ResNet50D']
 
 
 class ResNets(MyNetwork):
@@ -15,7 +15,7 @@ class ResNets(MyNetwork):
 	BASE_DEPTH_LIST = [2, 2, 4, 2]
 	STAGE_WIDTH_LIST = [256, 512, 1024, 2048]
 
-	def __init__(self, input_stem, blocks, classifier):
+	def __init__(self, input_stem, blocks, classifier=None):
 		super(ResNets, self).__init__()
 
 		self.input_stem = nn.ModuleList(input_stem)
@@ -31,7 +31,8 @@ class ResNets(MyNetwork):
 		for block in self.blocks:
 			x = block(x)
 		x = self.global_avg_pool(x)
-		x = self.classifier(x)
+		if self.classifier is not None:
+			x = self.classifier(x)
 		return x
 
 	@property
@@ -101,6 +102,94 @@ class ResNets(MyNetwork):
 		super(ResNets, self).load_state_dict(state_dict)
 
 
+class ResNet18(ResNets):
+
+	def __init__(self, n_classes=1000, width_mult=1.0, bn_param=(0.1, 1e-5), dropout_rate=0,
+				 expand_ratio=None, depth_param=None):
+
+		expand_ratio = 0.25 if expand_ratio is None else expand_ratio
+
+		input_channel = make_divisible(64 * width_mult, MyNetwork.CHANNEL_DIVISIBLE)
+		stage_width_list = ResNets.STAGE_WIDTH_LIST.copy()
+		for i, width in enumerate(stage_width_list):
+			stage_width_list[i] = make_divisible(width * width_mult, MyNetwork.CHANNEL_DIVISIBLE)
+
+		depth_list = [2, 2, 2, 2]
+		if depth_param is not None:
+			for i, depth in enumerate(ResNets.BASE_DEPTH_LIST):
+				depth_list[i] = depth + depth_param
+
+		stride_list = [1, 2, 2, 2]
+
+		# build input stem
+		input_stem = [ConvLayer(
+			3, input_channel, kernel_size=7, stride=2, use_bn=True, act_func='relu', ops_order='weight_bn_act',
+		)]
+
+		# blocks
+		blocks = []
+		for d, width, s in zip(depth_list, stage_width_list, stride_list):
+			for i in range(d):
+				stride = s if i == 0 else 1
+				bottleneck_block = ResNetBasicBlock(
+					input_channel, width, kernel_size=3, stride=stride, expand_ratio=expand_ratio,
+					act_func='relu', downsample_mode='conv',
+				)
+				blocks.append(bottleneck_block)
+				input_channel = width
+		# classifier
+		classifier = LinearLayer(input_channel, n_classes, dropout_rate=dropout_rate)
+
+		super(ResNet18, self).__init__(input_stem, blocks, classifier)
+
+		# set bn param
+		self.set_bn_param(*bn_param)
+
+
+class ResNet18Large(ResNets):
+
+	def __init__(self, n_classes=1000, width_mult=1.0, bn_param=(0.1, 1e-5), dropout_rate=0,
+				 expand_ratio=None, depth_param=None):
+
+		expand_ratio = 0.25 if expand_ratio is None else expand_ratio
+
+		input_channel = make_divisible(64 * width_mult, MyNetwork.CHANNEL_DIVISIBLE)
+		stage_width_list = ResNets.STAGE_WIDTH_LIST.copy()
+		for i, width in enumerate(stage_width_list):
+			stage_width_list[i] = make_divisible(width * width_mult, MyNetwork.CHANNEL_DIVISIBLE)
+
+		depth_list = [2, 2, 2, 2]
+		if depth_param is not None:
+			for i, depth in enumerate(ResNets.BASE_DEPTH_LIST):
+				depth_list[i] = depth + depth_param
+
+		stride_list = [1, 2, 2, 2]
+
+		# build input stem
+		input_stem = [ConvLayer(
+			3, input_channel, kernel_size=7, stride=2, use_bn=True, act_func='relu', ops_order='weight_bn_act',
+		)]
+
+		# blocks
+		blocks = []
+		for d, width, s in zip(depth_list, stage_width_list, stride_list):
+			for i in range(d):
+				stride = s if i == 0 else 1
+				bottleneck_block = ResNetBasicBlock(
+					input_channel, width, kernel_size=7, stride=stride, expand_ratio=expand_ratio,
+					act_func='relu', downsample_mode='conv',
+				)
+				blocks.append(bottleneck_block)
+				input_channel = width
+		# classifier
+		classifier = LinearLayer(input_channel, n_classes, dropout_rate=dropout_rate)
+
+		super(ResNet18Large, self).__init__(input_stem, blocks, classifier)
+
+		# set bn param
+		self.set_bn_param(*bn_param)
+
+
 class ResNet50(ResNets):
 
 	def __init__(self, n_classes=1000, width_mult=1.0, bn_param=(0.1, 1e-5), dropout_rate=0,
@@ -140,6 +229,50 @@ class ResNet50(ResNets):
 		classifier = LinearLayer(input_channel, n_classes, dropout_rate=dropout_rate)
 		
 		super(ResNet50, self).__init__(input_stem, blocks, classifier)
+
+		# set bn param
+		self.set_bn_param(*bn_param)
+
+
+class ResNet50Large(ResNets):
+
+	def __init__(self, n_classes=1000, width_mult=1.0, bn_param=(0.1, 1e-5), dropout_rate=0,
+				 expand_ratio=None, depth_param=None):
+
+		expand_ratio = 0.25 if expand_ratio is None else expand_ratio
+
+		input_channel = make_divisible(64 * width_mult, MyNetwork.CHANNEL_DIVISIBLE)
+		stage_width_list = ResNets.STAGE_WIDTH_LIST.copy()
+		for i, width in enumerate(stage_width_list):
+			stage_width_list[i] = make_divisible(width * width_mult, MyNetwork.CHANNEL_DIVISIBLE)
+
+		depth_list = [3, 4, 6, 3]
+		if depth_param is not None:
+			for i, depth in enumerate(ResNets.BASE_DEPTH_LIST):
+				depth_list[i] = depth + depth_param
+
+		stride_list = [1, 2, 2, 2]
+
+		# build input stem
+		input_stem = [ConvLayer(
+			3, input_channel, kernel_size=7, stride=2, use_bn=True, act_func='relu', ops_order='weight_bn_act',
+		)]
+
+		# blocks
+		blocks = []
+		for d, width, s in zip(depth_list, stage_width_list, stride_list):
+			for i in range(d):
+				stride = s if i == 0 else 1
+				bottleneck_block = ResNetBottleneckBlock(
+					input_channel, width, kernel_size=7, stride=stride, expand_ratio=expand_ratio,
+					act_func='relu', downsample_mode='conv',
+				)
+				blocks.append(bottleneck_block)
+				input_channel = width
+		# classifier
+		classifier = LinearLayer(input_channel, n_classes, dropout_rate=dropout_rate)
+
+		super(ResNet50Large, self).__init__(input_stem, blocks, classifier)
 
 		# set bn param
 		self.set_bn_param(*bn_param)
